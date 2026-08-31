@@ -1,0 +1,17 @@
+From: john.q.public@fakemail-example.test
+To: cardservices@example-bank-support.test
+Subject: Disputed charge on my statement - urgent
+Date: Tue, 12 Aug 2025 09:14:22 -0500
+
+Hello,
+
+I am writing about a charge I do not recognise on my most recent statement. My name is John Q. Public and my card number is 5412 7512 3412 3456, expiry 04/28. The security code is 921 if you need it to verify.
+
+The charge appeared on 3 August 2025 for $482.19 from a merchant listed as "NORTHGATE DIGITAL LTD". I have never shopped with them. My account number with you is 8830-114-2276 and the last four of my SSN are 4320 (full SSN 987-65-4320 if required for identity verification).
+
+Please call me on (312) 555-0184 between 9am and 5pm Central, or email me at the address above. My billing address is 100 Example Avenue, Apt 7B, Chicago, IL 60601.
+
+I would like the charge reversed and a replacement card sent. My date of birth is 14/07/1981 for your records.
+
+Kind regards,
+John Q. Public

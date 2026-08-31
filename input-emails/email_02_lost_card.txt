@@ -1,0 +1,23 @@
+From: j.bloggs1987@example-mail.test
+To: lostandstolen@example-bank-support.test
+Subject: Card lost while travelling - please block immediately
+Date: Sat, 23 Aug 2025 18:47:03 +0100
+
+Hi there,
+
+I lost my wallet at Gatwick Airport yesterday evening and my credit card was inside. Please block it right away.
+
+Card details:
+- Cardholder name: Jane A. Bloggs
+- Card number: 4024 0071 5588 1902
+- Expires: 11/2027
+- Account reference: ACCT-99120043
+
+I am currently in Lisbon and staying at Rua de Exemplo 118, 1100-415 Lisboa, Portugal until 30 August. My Portuguese mobile is +351 912 555 034 and my UK number is +44 7700 900412.
+
+Can you courier a replacement to my home address at 27 Example Gardens, Manchester, M20 3QR, United Kingdom? I will be back on the 31st.
+
+My passport number is 546789231 if you need extra identification. I have also attached a photo of my driving licence (number BLOGG807145J99AB).
+
+Thank you,
+Jane Bloggs

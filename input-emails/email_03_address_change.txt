@@ -1,0 +1,22 @@
+From: taro.yamada@sample-domain.test
+To: accountupdates@example-bank-support.test
+Subject: Change of address and phone number on my account
+Date: Mon, 4 Aug 2025 11:02:55 -0700
+
+Good morning,
+
+I recently moved and need to update my details on my credit card account.
+
+Old address: 1290 Example Court, Unit 12, San Jose, CA 95112
+New address: 8802 Example Drive, Bellevue, WA 98004
+
+My name on the account is Taro Yamada, account number 4417-2290-6631. The card ending in 7742 is the primary card and my wife Hanako Yamada holds the secondary card ending in 3319.
+
+Please also update my phone number from (408) 555-0122 to (425) 555-0198. My new work email is t.yamada@contoso-example.test and I would prefer statements go there.
+
+For verification: my SSN is 987-65-4321 and my date of birth is 22 March 1979. My employee ID at my new employer is EMP-448192 in case that helps with the income verification you requested.
+
+Let me know if you need anything else.
+
+Best,
+Taro Yamada

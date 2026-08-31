@@ -1,0 +1,26 @@
+From: fulana.alfulani@placeholder-mail.test
+To: creditservices@example-bank-support.test
+Subject: Request to increase credit limit
+Date: Fri, 29 Aug 2025 14:20:09 +0400
+
+Dear Credit Services team,
+
+I would like to request an increase to my credit limit from AED 25,000 to AED 60,000.
+
+My details:
+Full name: Fulana Al-Fulani
+Card number: 5555 3412 4444 1115, expiry 09/29
+Account number: AE-8892-4471-0032
+Emirates ID: 784-1988-3345612-7
+IBAN: AE07 0331 2345 6789 0123 456
+
+I have been a customer since 2016 and have never missed a payment. My current annual salary is AED 480,000 as a Senior Operations Manager at Fictional Logistics FZE, and my staff number there is FL-20418. I can supply salary certificates if needed.
+
+You can reach me at +971 50 555 0176 or at my work email f.alfulani@fictional-logistics.test. My residential address is Villa 22, Example District 3, Dubai, United Arab Emirates.
+
+My husband, Fulan Al-Fulani (passport K01554823), is a supplementary cardholder on this account and his card ends in 8890.
+
+Thank you for considering my request.
+
+Sincerely,
+Fulana Al-Fulani

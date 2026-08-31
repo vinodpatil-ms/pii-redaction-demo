@@ -1,0 +1,31 @@
+From: jane.q.public@testmail-example.test
+To: fraud@example-bank-support.test
+Cc: jpublic.work@fictional-corp.test
+Subject: URGENT - suspected fraud, multiple transactions I did not make
+Date: Wed, 20 Aug 2025 22:38:41 -0400
+
+To whom it may concern,
+
+I checked my online banking tonight and found six transactions I did not authorise, totalling $3,914.66. Please freeze the account immediately.
+
+Account holder: Jane Q. Public
+Card: 3714 496353 98431 (Amex)
+Account no: 700-4482-11907
+Online banking username: jpublic_82
+
+The fraudulent transactions:
+1. 18/08/2025 - $899.00 - LUXE ELECTRONICS ONLINE
+2. 18/08/2025 - $1,200.00 - TRAVELHUB BOOKINGS
+3. 19/08/2025 - $415.66 - GAMEZONE DIGITAL
+4. 19/08/2025 - $650.00 - CRYPTOEXCHANGE-XYZ
+5. 20/08/2025 - $500.00 - ATM WITHDRAWAL, 45 Example Street, Boston MA
+6. 20/08/2025 - $250.00 - ATM WITHDRAWAL, 45 Example Street, Boston MA
+
+I live at 3315 Example Road, Apartment 9, Boston, MA 02114 and I have not left the city. My mobile is 617-555-0143.
+
+I also received a suspicious text last week asking me to confirm my PIN (mine is 4482, which I never shared). I suspect that message was the source of the breach.
+
+Please contact me on my mobile as soon as possible. My driver's licence number is S4417-88291-00412 and my date of birth is 09/11/1982 for verification.
+
+Regards,
+Jane Q. Public

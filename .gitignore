@@ -1,0 +1,67 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# --- Test, type and lint caches ---
+# These embed absolute local paths, and therefore the working directory name.
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# --- Secrets and local configuration ---
+.env
+.env.*
+!.env.example
+
+# --- Terraform ---
+# State and plan files are credential-class artifacts: they carry subscription
+# and tenant IDs, principal object IDs, and any attribute marked sensitive.
+.terraform/
+*.tfstate
+*.tfstate.*
+tfplan
+*.tfplan
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# --- Editors and local tooling ---
+# .vscode/ is excluded because settings.json can auto-approve terminal commands.
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- AI agent and browser automation artifacts ---
+# Captured authenticated browser sessions and scraped documentation pages.
+.playwright-mcp/
+
+# --- Generated data ---
+# Trace output is an unredacted plaintext PII store. Never commit it.
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Redaction results are regenerable; the pipeline recreates these directories.
+output-emails/*
+output-images/*
+!output-emails/.gitkeep
+!output-images/.gitkeep

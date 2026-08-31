@@ -1,0 +1,28 @@
+# Provider plugins and vendored provider binaries.
+.terraform/
+
+# State: contains subscription/tenant IDs, principal object IDs, and secrets.
+*.tfstate
+*.tfstate.*
+
+# Saved plans embed the prior state and the resolved provider configuration,
+# including subscription_id. They are compressed, so a plaintext scan misses them.
+tfplan
+*.tfplan
+
+# Variable files hold real subscription IDs. Publish the .example instead.
+*.tfvars
+!*.tfvars.example
+*.tfvars.auto.tfvars
+
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# .terraform.lock.hcl is intentionally NOT ignored: commit it so provider
+# versions stay reproducible.
