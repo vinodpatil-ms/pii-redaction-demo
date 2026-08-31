@@ -268,16 +268,12 @@ Language and Vision are account-scoped, so the app only needs `APP_AI_SERVICES_E
 > must stay at the account scope. Use a separate account, not a separate project, when you need to
 > isolate access to redaction itself.
 
-See [docs/foundry-kb.md](docs/foundry-kb.md) for how accounts, projects, Vision, Language, Azure
-OpenAI, and model deployments relate, and [docs/architecture.md](docs/architecture.md) for the
-application-side decisions.
+See [docs/architecture.md](docs/architecture.md) for the overall flow.
 
 ### Authentication
 
 The account is deployed with `local_auth_enabled = false`, so no API keys are issued and every
-call uses an Entra ID token. Some tenants additionally enforce `disableLocalAuth = true` through
-Azure Policy; where that applies, setting the variable back to `true` produces permanent plan
-drift because Azure overrides it.
+call uses an Entra ID token. 
 
 **Data-plane access needs an explicit role.** Subscription Owner or Contributor does **not** grant
 it. Grant additional callers via `data_plane_principal_ids`, and set `data_plane_principal_type` to
