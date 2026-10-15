@@ -309,13 +309,49 @@ FOUNDRY PROJECT: OK
 
 ### Tear down
 
+From the repository root, review and apply a destroy plan for **dev only**:
+
 ```powershell
-terraform destroy
+terraform -chdir=infra/terraform/environments/dev plan -destroy -out=tfplan
+terraform -chdir=infra/terraform/environments/dev apply tfplan
+Remove-Item infra/terraform/environments/dev/tfplan
 ```
 
 Cognitive Services accounts are soft-deleted. The provider sets
 `purge_soft_delete_on_destroy = true` so the name is released; otherwise redeploying with the same
 name fails until the soft-deleted account is purged.
+
+This deletes the deployed resources and their cloud-side data, not the local demo inputs,
+outputs, or reports. Keep the Terraform configuration, `.terraform.lock.hcl`, your local
+`terraform.tfvars`, and the updated local state. Keep state and variable files private and
+out of Git. Do not restore pre-destroy state after a successful teardown or reuse old plans.
+
+### Recreate for a future demo
+
+From the repository root, reuse your existing `terraform.tfvars` (do not overwrite it with
+the example):
+
+```powershell
+az login
+terraform -chdir=infra/terraform/environments/dev init
+terraform -chdir=infra/terraform/environments/dev validate
+terraform -chdir=infra/terraform/environments/dev plan -out=tfplan
+terraform -chdir=infra/terraform/environments/dev apply tfplan
+Remove-Item infra/terraform/environments/dev/tfplan
+terraform -chdir=infra/terraform/environments/dev output -raw ai_services_endpoint
+```
+
+Check `subscription_id`, region, and any explicit principal IDs in `terraform.tfvars` before
+planning. With the default empty principal list, access is granted to the deploying identity.
+The random suffix is recreated after destruction, so the account name and endpoint will change.
+Update `APP_AI_SERVICES_ENDPOINT` in your existing `.env` with the new output. Allow up to
+~15 minutes for role assignments to propagate, then verify and run the demo:
+
+```powershell
+Push-Location infra/terraform/environments/dev
+try { ./smoke-test.ps1 } finally { Pop-Location }
+python -m pii_redaction_demo.main --mode all --trace
+```
 
 ---
 
