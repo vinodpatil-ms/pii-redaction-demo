@@ -24,12 +24,13 @@
 
 ## What it demonstrates
 
-Two channels, one shared Azure AI Services account:
+Two channels: Document Intelligence Read extracts image text, and Azure AI Language detects PII.
+The services use separate Azure accounts and endpoints with shared Entra ID authentication.
 
 ```mermaid
 flowchart LR
     subgraph images ["Image channel"]
-        A[input-images/*.jpg] --> B[Azure AI Vision<br/>Read / OCR]
+        A[input-images/*.jpg] --> B[Document Intelligence<br/>prebuilt-read / OCR]
         B --> C[Flatten to one document<br/>+ record word boxes]
         C --> D[Azure AI Language<br/>PII detection]
         D --> E[Map entity offsets<br/>back to word boxes]
@@ -48,6 +49,21 @@ document while recording where each recognized word landed, then maps the detect
 back onto the original word polygons so the right pixels get masked.
 
 Emails skip OCR entirely and go straight to PII detection.
+
+OCR uses the **GA Document Intelligence v4.0 API (`2024-11-30`)** and the `prebuilt-read` model.
+The provider submits an analysis job and waits for completion using the SDK poller, then maps
+page-level words to lines using their text spans. Word polygons are converted to image pixel
+coordinates for the existing masking pipeline. No custom model training is needed.
+
+**Reference-only legacy provider:**
+[src/pii_redaction_demo/providers/azure_vision.py](src/pii_redaction_demo/providers/azure_vision.py)
+is retained only for comparison with the previous Azure Vision Image Analysis OCR implementation.
+The application does not import or use it; **Document Intelligence is the only active OCR provider**.
+Its `azure-ai-vision-imageanalysis` SDK is not installed by this project's dependencies, and the
+reference module is excluded from active-code type checking and coverage measurement.
+
+References: [Read model](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/prebuilt/read?view=doc-intel-4.0.0)
+and [Image Analysis migration guidance](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/migration-options).
 
 ---
 
@@ -79,8 +95,8 @@ terraform plan -out=tfplan
 terraform apply tfplan
 ```
 
-This creates one multi-service Azure AI Services account that serves both Vision and Language,
-plus a Foundry project. See [Infrastructure](#infrastructure) for what is provisioned and why.
+This creates a multi-service Azure AI Services account for Language and a Foundry project,
+plus a dedicated Document Intelligence account for OCR. See [Infrastructure](#infrastructure).
 
 > Role assignments on the Cognitive Services data plane can take up to ~15 minutes to propagate.
 > A `401 PermissionDenied` immediately after `apply` is expected — wait and retry before
@@ -92,9 +108,17 @@ plus a Foundry project. See [Infrastructure](#infrastructure) for what is provis
 cd ../../../..
 Copy-Item .env.example .env
 terraform -chdir=infra/terraform/environments/dev output -raw ai_services_endpoint
+terraform -chdir=infra/terraform/environments/dev output -raw document_intelligence_endpoint
 ```
 
-Put that endpoint into `.env` as `APP_AI_SERVICES_ENDPOINT`. It is the only required setting.
+Put the first endpoint into `.env` as `APP_AI_SERVICES_ENDPOINT` and the second as
+`APP_DOCUMENT_INTELLIGENCE_ENDPOINT`. Email-only mode needs only the Language endpoint.
+
+**Upgrading an existing deployment:** keep your current `terraform.tfvars` and `.env`; do not
+overwrite them with the examples. Run `terraform init`, review a new plan, and apply it to add
+the Document Intelligence account and its role assignments. The existing AI Services account and
+Foundry project remain in place. Add the new OCR endpoint to `.env`, and reinstall with
+`python -m pip install -e ".[dev]"`. The old Image Analysis endpoint is no longer used by the app.
 
 ### 4. Run it
 
@@ -118,8 +142,8 @@ INFO    pii_redaction_demo.main: done: 5 image(s), 5 email(s), 41 PII entity(ies
 
 ### 5. Open the trace report
 
-`--trace` is the part worth demoing. It writes `data/processed/<timestamp>/` containing the raw
-output of every step — source, OCR JSON with word boxes, the flattened document, the detected
+`--trace` is the part worth demoing. It writes `data/processed/<timestamp>/` containing the
+output of every step — source, normalized OCR JSON with word boxes, the flattened document, the detected
 entities, and the masked result — plus a `report.html` showing them side by side with the OCR and
 PII boxes drawn on the image. Open that file to walk through what each service contributed.
 
@@ -146,7 +170,8 @@ Settings are read from `.env` with the `APP_` prefix. See `.env.example`.
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
-| `APP_AI_SERVICES_ENDPOINT` | *(required)* | Shared Vision + Language endpoint |
+| `APP_AI_SERVICES_ENDPOINT` | *(required)* | Azure AI Services account endpoint for Language PII |
+| `APP_DOCUMENT_INTELLIGENCE_ENDPOINT` | *(required for images/all)* | Dedicated Document Intelligence account endpoint for Read OCR |
 | `APP_PII_LANGUAGE` | `en` | Language hint passed to Azure AI Language |
 | `APP_PII_MIN_CONFIDENCE` | `0.0` | Drop detections below this confidence before masking |
 | `APP_LOG_LEVEL` | `INFO` | Root log level |
@@ -213,6 +238,14 @@ characters. `PiiRedactionService` batches by document *count* only (5 per reques
 email or a text-heavy image is rejected by the service. Production code must split documents into
 service-safe chunks and reassemble the results, remapping entity offsets back to the original.
 
+The image channel accepts single-page JPEG, PNG, BMP, and TIFF images; it does not add PDF or
+Office-document redaction even though Document Intelligence supports those inputs. Multi-page
+OCR results and non-pixel coordinates are rejected to avoid masking the wrong page or location.
+Document Intelligence image limits (including 50 x 50 through 10,000 x 10,000 pixels) still apply.
+The app does not prevalidate file sizes or dimensions. OCR is a submit-and-poll operation, not a
+single synchronous HTTP response; benchmark latency and mask alignment on your own synthetic
+inputs before relying on it. The application does not set an overall OCR polling deadline.
+
 ### 3. There is no per-item fault isolation
 
 Each pipeline processes a directory as a single batch. One bad input aborts the entire run and no
@@ -243,37 +276,42 @@ diagnostic settings, and no lifecycle policy. `dev` is the only environment.
 
 ## Infrastructure
 
-The `dev` environment provisions a resource group containing a single multi-service Azure AI
-Services account, configured as a Foundry resource with one project:
+The `dev` environment provisions a resource group containing two service accounts and one
+Foundry project:
 
 | Resource | Kind | Purpose |
 | --- | --- | --- |
-| `cog-<prefix>-aiservices-<suffix>` | `AIServices` | Vision Read/OCR **and** Language PII detection |
+| `cog-<prefix>-aiservices-<suffix>` | `AIServices` | Language PII detection and Foundry resource |
+| `cog-<prefix>-docintel-<suffix>` | `FormRecognizer` | Document Intelligence `prebuilt-read` OCR |
 | `<account>/<project>` | `AIServices` project | Foundry portal playgrounds, evaluations, traces |
 
 `project_management_enabled = true` is what turns the account into a Foundry resource: it makes
 the account visible in the Foundry portal and lets it parent `accounts/projects` children. The
 flag provisions nothing on its own, so the project is declared explicitly.
 
-The two scopes expose different endpoints:
+The service accounts and project expose different endpoints:
 
 | Endpoint | Terraform output | Serves |
 | --- | --- | --- |
-| `https://<account>.cognitiveservices.azure.com/` | `ai_services_endpoint` | Language PII, Vision OCR, Speech, Translator — **what this app calls** |
+| `https://<ai-account>.cognitiveservices.azure.com/` | `ai_services_endpoint` | Language PII detection |
+| `https://<docintel-account>.cognitiveservices.azure.com/` | `document_intelligence_endpoint` | Document Intelligence Read OCR |
 | `https://<account>.services.ai.azure.com/api/projects/<project>` | `ai_project_endpoint` | Agents, evaluations, datasets, files |
 
-Language and Vision are account-scoped, so the app only needs `APP_AI_SERVICES_ENDPOINT`.
+The app uses the two account endpoints, not the project endpoint. The dedicated Document
+Intelligence resource has a custom subdomain for Entra ID authentication. Its SKU defaults to
+`S0`; set `document_intelligence_sku_name = "F0"` for a free-tier trial where available. OCR is
+billed separately from Language PII.
 
-> Language and Vision do not support project-level RBAC isolation, so data-plane role assignments
-> must stay at the account scope. Use a separate account, not a separate project, when you need to
-> isolate access to redaction itself.
+> Data-plane role assignments are scoped to each service account. A role on the Foundry project
+> alone does not grant OCR or Language PII access.
 
 See [docs/architecture.md](docs/architecture.md) for the overall flow.
 
 ### Authentication
 
-The account is deployed with `local_auth_enabled = false`, so no API keys are issued and every
-call uses an Entra ID token. 
+Both accounts default to `local_auth_enabled = false`, disabling API-key authentication; every
+application call uses an Entra ID token. Terraform grants `Cognitive Services User` on both
+accounts to each configured caller, plus `Foundry User` on the AI Services account for portal access.
 
 **Data-plane access needs an explicit role.** Subscription Owner or Contributor does **not** grant
 it. Grant additional callers via `data_plane_principal_ids`, and set `data_plane_principal_type` to
@@ -286,8 +324,9 @@ data_plane_principal_type = "ServicePrincipal"
 
 ### Verify
 
-`smoke-test.ps1` reads the endpoint from Terraform outputs, calls both data planes with an Entra
-ID token, and confirms the Foundry project exists:
+`smoke-test.ps1` reads both endpoints from Terraform outputs, calls both data planes with an Entra
+ID token, and confirms the Foundry project exists. The Read check submits a public sample image
+and polls for up to two minutes. Any failed check causes the script to fail:
 
 ```powershell
 ./smoke-test.ps1
@@ -297,15 +336,15 @@ ID token, and confirms the Foundry project exists:
 LANGUAGE PII: OK
   redacted: ********'s card number is ******************* and her email is ********************.
   entities: Person, CreditCardNumber, Email
-VISION OCR: OK
+DOCUMENT INTELLIGENCE READ: OK
   lines read: 16
 FOUNDRY PROJECT: OK
   <project> (default: True)
 ```
 
-> Unsupported Image Analysis API versions return `401 PermissionDenied` rather than a version
-> error, so a 401 from Vision is not necessarily a permissions problem. This code targets
-> `api-version=2023-10-01`.
+The OCR provider and smoke test both target `api-version=2024-11-30` with `prebuilt-read`.
+For an OCR authorization failure, check the Document Intelligence endpoint and role assignment
+on that account, not just the role assignment on the Language account.
 
 ### Tear down
 
@@ -339,12 +378,14 @@ terraform -chdir=infra/terraform/environments/dev plan -out=tfplan
 terraform -chdir=infra/terraform/environments/dev apply tfplan
 Remove-Item infra/terraform/environments/dev/tfplan
 terraform -chdir=infra/terraform/environments/dev output -raw ai_services_endpoint
+terraform -chdir=infra/terraform/environments/dev output -raw document_intelligence_endpoint
 ```
 
 Check `subscription_id`, region, and any explicit principal IDs in `terraform.tfvars` before
 planning. With the default empty principal list, access is granted to the deploying identity.
-The random suffix is recreated after destruction, so the account name and endpoint will change.
-Update `APP_AI_SERVICES_ENDPOINT` in your existing `.env` with the new output. Allow up to
+The random suffix is recreated after destruction, so both account names and endpoints will change.
+Update `APP_AI_SERVICES_ENDPOINT` and `APP_DOCUMENT_INTELLIGENCE_ENDPOINT` in your existing `.env`
+with the corresponding outputs. Allow up to
 ~15 minutes for role assignments to propagate, then verify and run the demo:
 
 ```powershell

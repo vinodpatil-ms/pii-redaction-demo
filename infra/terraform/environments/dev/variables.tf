@@ -33,6 +33,17 @@ variable "project_name" {
   default     = "proj-demo-pii"
 }
 
+variable "document_intelligence_sku_name" {
+  description = "SKU for the Document Intelligence Read account (S0 or F0)."
+  type        = string
+  default     = "S0"
+
+  validation {
+    condition     = contains(["S0", "F0"], var.document_intelligence_sku_name)
+    error_message = "document_intelligence_sku_name must be S0 or F0."
+  }
+}
+
 # Defaults to false so the account is Entra ID only. Some tenants enforce
 # disableLocalAuth=true via Azure Policy, which overrides this setting.
 variable "local_auth_enabled" {
@@ -42,7 +53,7 @@ variable "local_auth_enabled" {
 }
 
 variable "data_plane_principal_ids" {
-  description = "Entra ID object IDs granted 'Cognitive Services User'. Defaults to the deploying principal."
+  description = "Entra ID object IDs granted 'Cognitive Services User' on both accounts. Defaults to the deploying principal."
   type        = list(string)
   default     = []
 }

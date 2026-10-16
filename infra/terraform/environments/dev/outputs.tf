@@ -4,7 +4,7 @@ output "resource_group_name" {
 }
 
 output "ai_services_endpoint" {
-  description = "Shared endpoint for the Azure AI Services account (Vision OCR and Language PII)."
+  description = "Azure AI Services endpoint for Language PII detection."
   value       = module.ai_services.endpoint
 }
 
@@ -24,8 +24,23 @@ output "ai_project_name" {
   value       = azurerm_cognitive_account_project.default.name
 }
 
-# Only the Foundry/agent APIs are project-scoped; Language and Vision stay on the account endpoint.
+# Only the Foundry/agent APIs are project-scoped; Language stays on the account endpoint.
 output "ai_project_endpoint" {
   description = "Project-scoped Foundry API endpoint."
   value       = lookup(azurerm_cognitive_account_project.default.endpoints, "AI Foundry API", null)
+}
+
+output "document_intelligence_endpoint" {
+  description = "Document Intelligence Read endpoint (APP_DOCUMENT_INTELLIGENCE_ENDPOINT)."
+  value       = module.document_intelligence.endpoint
+}
+
+output "document_intelligence_name" {
+  description = "Name of the Document Intelligence account."
+  value       = module.document_intelligence.name
+}
+
+output "document_intelligence_id" {
+  description = "Resource ID of the Document Intelligence account for data-plane role assignments."
+  value       = module.document_intelligence.id
 }

@@ -14,12 +14,12 @@ variable "resource_group_name" {
 }
 
 variable "kind" {
-  description = "Cognitive Services kind, e.g. AIServices, ComputerVision, or TextAnalytics."
+  description = "Cognitive Services kind, e.g. AIServices, FormRecognizer, or TextAnalytics."
   type        = string
 
   validation {
-    condition     = contains(["AIServices", "ComputerVision", "TextAnalytics"], var.kind)
-    error_message = "kind must be one of: AIServices, ComputerVision, TextAnalytics."
+    condition     = contains(["AIServices", "FormRecognizer", "ComputerVision", "TextAnalytics"], var.kind)
+    error_message = "kind must be one of: AIServices, FormRecognizer, ComputerVision, TextAnalytics."
   }
 }
 

@@ -1,7 +1,8 @@
 $ErrorActionPreference = 'Stop'
 
-# Vision OCR and Language PII are served by the same multi-service AI Services account.
 $endpoint = (terraform output -raw ai_services_endpoint).TrimEnd('/')
+$ocrEndpoint = (terraform output -raw document_intelligence_endpoint).TrimEnd('/')
+$failed = $false
 
 $token = az account get-access-token --resource 'https://cognitiveservices.azure.com' --query accessToken -o tsv
 $headers = @{ Authorization = "Bearer $token" }
@@ -29,24 +30,38 @@ try {
     Write-Host ("  entities: " + (($r.results.documents[0].entities | ForEach-Object { $_.category }) -join ', '))
 }
 catch {
+    $failed = $true
     Write-Host "LANGUAGE PII: FAILED -> $($_.Exception.Message)"
     if ($_.ErrorDetails.Message) { Write-Host ("  detail: " + $_.ErrorDetails.Message) }
 }
 
-# --- Azure AI Vision: Image Analysis / OCR read ---
-$visionBody = @{ url = 'https://learn.microsoft.com/azure/ai-services/computer-vision/media/quickstarts/presentation.png' } | ConvertTo-Json
-
 try {
-    # api-version 2024-02-01 is not served by this account and returns a misleading 401.
-    $uri = "$endpoint/computervision/imageanalysis:analyze?api-version=2023-10-01&features=read"
-    $v = Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -ContentType 'application/json' -Body $visionBody
-    $lines = $v.readResult.blocks[0].lines
-    Write-Host "VISION OCR: OK"
+    $ocrBody = @{
+        urlSource = 'https://learn.microsoft.com/azure/ai-services/computer-vision/media/quickstarts/presentation.png'
+    } | ConvertTo-Json
+    $uri = "$ocrEndpoint/documentintelligence/documentModels/prebuilt-read:analyze?api-version=2024-11-30&stringIndexType=unicodeCodePoint"
+    $submission = Invoke-WebRequest -Method Post -Uri $uri -Headers $headers -ContentType 'application/json' -Body $ocrBody
+    $operationLocation = [string]($submission.Headers['Operation-Location'] | Select-Object -First 1)
+    if (-not $operationLocation) { throw 'OCR response omitted Operation-Location.' }
+    $deadline = (Get-Date).AddMinutes(2)
+    do {
+        $ocr = Invoke-RestMethod -Method Get -Uri $operationLocation -Headers $headers
+        if ($ocr.status -eq 'succeeded') { break }
+        if ($ocr.status -notin @('notStarted', 'running')) {
+            throw "OCR operation ended with status '$($ocr.status)': $($ocr.error.message)"
+        }
+        if ((Get-Date) -ge $deadline) { throw 'OCR operation timed out after two minutes.' }
+        Start-Sleep -Seconds 2
+    } while ($true)
+    $lines = @($ocr.analyzeResult.pages | ForEach-Object { $_.lines })
+    if ($lines.Count -eq 0) { throw 'OCR returned no lines for the sample image.' }
+    Write-Host "DOCUMENT INTELLIGENCE READ: OK"
     Write-Host ("  lines read: " + $lines.Count)
-    Write-Host ("  sample: " + $lines[0].text)
+    Write-Host ("  sample: " + $lines[0].content)
 }
 catch {
-    Write-Host "VISION OCR: FAILED -> $($_.Exception.Message)"
+    $failed = $true
+    Write-Host "DOCUMENT INTELLIGENCE READ: FAILED -> $($_.Exception.Message)"
     if ($_.ErrorDetails.Message) { Write-Host ("  detail: " + $_.ErrorDetails.Message) }
 }
 
@@ -63,6 +78,9 @@ try {
     }
 }
 catch {
+    $failed = $true
     Write-Host "FOUNDRY PROJECT: FAILED -> $($_.Exception.Message)"
     if ($_.ErrorDetails.Message) { Write-Host ("  detail: " + $_.ErrorDetails.Message) }
 }
+
+if ($failed) { throw 'One or more infrastructure smoke checks failed.' }

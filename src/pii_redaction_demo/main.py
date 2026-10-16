@@ -7,8 +7,10 @@ from azure.core.credentials import TokenCredential
 from azure.identity import DefaultAzureCredential
 
 from pii_redaction_demo.core.config import PROJECT_ROOT, Settings, get_settings
+from pii_redaction_demo.providers.azure_document_intelligence import (
+    AzureDocumentIntelligenceOcrProvider,
+)
 from pii_redaction_demo.providers.azure_language import AzureLanguagePiiProvider
-from pii_redaction_demo.providers.azure_vision import AzureVisionOcrProvider
 from pii_redaction_demo.providers.pillow_image import PillowImageRedactor
 from pii_redaction_demo.services.pii_redaction import PiiRedactionService
 from pii_redaction_demo.services.pipeline import (
@@ -29,9 +31,13 @@ def build_image_pipeline(
     credential: TokenCredential | None = None,
 ) -> ImageRedactionPipeline:
     endpoint = _require_endpoint(settings)
+    if not settings.document_intelligence_endpoint:
+        raise ValueError("APP_DOCUMENT_INTELLIGENCE_ENDPOINT is not configured")
     credential = credential or DefaultAzureCredential()
     return ImageRedactionPipeline(
-        ocr=AzureVisionOcrProvider(endpoint, credential),
+        ocr=AzureDocumentIntelligenceOcrProvider(
+            settings.document_intelligence_endpoint, credential
+        ),
         redaction=_build_redaction_service(settings, endpoint, credential),
         image_redactor=PillowImageRedactor(),
     )
@@ -60,7 +66,6 @@ def _build_redaction_service(
     )
 
 
-# Vision OCR and Language PII share one multi-service Azure AI Services endpoint.
 def _require_endpoint(settings: Settings) -> str:
     if not settings.ai_services_endpoint:
         raise ValueError("APP_AI_SERVICES_ENDPOINT is not configured")

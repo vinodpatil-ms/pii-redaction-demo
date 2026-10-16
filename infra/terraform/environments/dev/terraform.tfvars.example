@@ -1,6 +1,7 @@
 # Copy to terraform.tfvars and fill in your own values.
 # terraform.tfvars is gitignored: never commit a real subscription ID.
-subscription_id     = "00000000-0000-0000-0000-000000000000"
-resource_group_name = "rg-demo-pii-redaction"
-location            = "eastus"
-name_prefix         = "demo-pii"
+subscription_id                = "00000000-0000-0000-0000-000000000000"
+resource_group_name            = "rg-demo-pii-redaction"
+location                       = "eastus"
+name_prefix                    = "demo-pii"
+document_intelligence_sku_name = "S0"

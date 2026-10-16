@@ -9,6 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 class Settings(BaseSettings):
     log_level: str = "INFO"
     ai_services_endpoint: str | None = None
+    document_intelligence_endpoint: str | None = None
     pii_language: str = "en"
     # 0.0 masks every detection Azure AI Language returns; raise it to drop weak matches.
     pii_min_confidence: float = 0.0

@@ -1,3 +1,9 @@
+"""Legacy Azure Vision OCR provider retained for reference only.
+
+The application uses AzureDocumentIntelligenceOcrProvider instead. This module
+requires azure-ai-vision-imageanalysis, which is not a runtime dependency.
+"""
+
 from collections.abc import Sequence
 
 from azure.ai.vision.imageanalysis import ImageAnalysisClient
