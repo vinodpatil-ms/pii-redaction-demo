@@ -1,7 +1,13 @@
+param(
+    [ValidateSet('content_understanding', 'document_intelligence')]
+    [string]$OcrProvider = 'content_understanding'
+)
+
 $ErrorActionPreference = 'Stop'
 
 $endpoint = (terraform output -raw ai_services_endpoint).TrimEnd('/')
-$ocrEndpoint = (terraform output -raw document_intelligence_endpoint).TrimEnd('/')
+$ocrEndpoint = (terraform output -raw "${OcrProvider}_endpoint").TrimEnd('/')
+$ocrLabel = $OcrProvider.Replace('_', ' ').ToUpperInvariant() + ' READ'
 $failed = $false
 
 $token = az account get-access-token --resource 'https://cognitiveservices.azure.com' --query accessToken -o tsv
@@ -36,10 +42,15 @@ catch {
 }
 
 try {
-    $ocrBody = @{
-        urlSource = 'https://learn.microsoft.com/azure/ai-services/computer-vision/media/quickstarts/presentation.png'
-    } | ConvertTo-Json
-    $uri = "$ocrEndpoint/documentintelligence/documentModels/prebuilt-read:analyze?api-version=2024-11-30&stringIndexType=unicodeCodePoint"
+    $sampleUrl = 'https://learn.microsoft.com/azure/ai-services/computer-vision/media/quickstarts/presentation.png'
+    if ($OcrProvider -eq 'content_understanding') {
+        $ocrBody = @{ inputs = @(@{ url = $sampleUrl }) } | ConvertTo-Json -Depth 5
+        $uri = "$ocrEndpoint/contentunderstanding/analyzers/prebuilt-read:analyze?api-version=2025-11-01&stringEncoding=codePoint"
+    }
+    else {
+        $ocrBody = @{ urlSource = $sampleUrl } | ConvertTo-Json
+        $uri = "$ocrEndpoint/documentintelligence/documentModels/prebuilt-read:analyze?api-version=2024-11-30&stringIndexType=unicodeCodePoint"
+    }
     $submission = Invoke-WebRequest -Method Post -Uri $uri -Headers $headers -ContentType 'application/json' -Body $ocrBody
     $operationLocation = [string]($submission.Headers['Operation-Location'] | Select-Object -First 1)
     if (-not $operationLocation) { throw 'OCR response omitted Operation-Location.' }
@@ -53,15 +64,20 @@ try {
         if ((Get-Date) -ge $deadline) { throw 'OCR operation timed out after two minutes.' }
         Start-Sleep -Seconds 2
     } while ($true)
-    $lines = @($ocr.analyzeResult.pages | ForEach-Object { $_.lines })
+    if ($OcrProvider -eq 'content_understanding') {
+        $lines = @($ocr.result.contents | ForEach-Object { $_.pages } | ForEach-Object { $_.lines })
+    }
+    else {
+        $lines = @($ocr.analyzeResult.pages | ForEach-Object { $_.lines })
+    }
     if ($lines.Count -eq 0) { throw 'OCR returned no lines for the sample image.' }
-    Write-Host "DOCUMENT INTELLIGENCE READ: OK"
+    Write-Host "${ocrLabel}: OK"
     Write-Host ("  lines read: " + $lines.Count)
     Write-Host ("  sample: " + $lines[0].content)
 }
 catch {
     $failed = $true
-    Write-Host "DOCUMENT INTELLIGENCE READ: FAILED -> $($_.Exception.Message)"
+    Write-Host "${ocrLabel}: FAILED -> $($_.Exception.Message)"
     if ($_.ErrorDetails.Message) { Write-Host ("  detail: " + $_.ErrorDetails.Message) }
 }
 

@@ -13,6 +13,21 @@ output "ai_services_name" {
   value       = module.ai_services.name
 }
 
+output "content_understanding_endpoint" {
+  description = "Foundry account endpoint for Content Understanding Read (APP_CONTENT_UNDERSTANDING_ENDPOINT), Azure public cloud."
+  value       = "https://${module.content_understanding.name}.services.ai.azure.com/"
+}
+
+output "content_understanding_name" {
+  description = "Name of the dedicated Content Understanding account."
+  value       = module.content_understanding.name
+}
+
+output "content_understanding_id" {
+  description = "Resource ID of the dedicated Content Understanding account for RBAC."
+  value       = module.content_understanding.id
+}
+
 # Scope for granting callers the "Cognitive Services User" role.
 output "ai_services_id" {
   description = "Resource ID of the Azure AI Services account."
@@ -24,14 +39,14 @@ output "ai_project_name" {
   value       = azurerm_cognitive_account_project.default.name
 }
 
-# Only the Foundry/agent APIs are project-scoped; Language stays on the account endpoint.
+# Content Understanding and Language use account endpoints, not this project endpoint.
 output "ai_project_endpoint" {
   description = "Project-scoped Foundry API endpoint."
   value       = lookup(azurerm_cognitive_account_project.default.endpoints, "AI Foundry API", null)
 }
 
 output "document_intelligence_endpoint" {
-  description = "Document Intelligence Read endpoint (APP_DOCUMENT_INTELLIGENCE_ENDPOINT)."
+  description = "Alternative Document Intelligence Read endpoint (APP_DOCUMENT_INTELLIGENCE_ENDPOINT)."
   value       = module.document_intelligence.endpoint
 }
 

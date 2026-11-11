@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,6 +10,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 class Settings(BaseSettings):
     log_level: str = "INFO"
     ai_services_endpoint: str | None = None
+    ocr_provider: Literal["content_understanding", "document_intelligence"] = (
+        "content_understanding"
+    )
+    content_understanding_endpoint: str | None = None
     document_intelligence_endpoint: str | None = None
     pii_language: str = "en"
     # 0.0 masks every detection Azure AI Language returns; raise it to drop weak matches.

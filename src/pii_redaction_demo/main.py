@@ -7,11 +7,15 @@ from azure.core.credentials import TokenCredential
 from azure.identity import DefaultAzureCredential
 
 from pii_redaction_demo.core.config import PROJECT_ROOT, Settings, get_settings
+from pii_redaction_demo.providers.azure_content_understanding import (
+    AzureContentUnderstandingOcrProvider,
+)
 from pii_redaction_demo.providers.azure_document_intelligence import (
     AzureDocumentIntelligenceOcrProvider,
 )
 from pii_redaction_demo.providers.azure_language import AzureLanguagePiiProvider
 from pii_redaction_demo.providers.pillow_image import PillowImageRedactor
+from pii_redaction_demo.providers.protocols import OcrProvider
 from pii_redaction_demo.services.pii_redaction import PiiRedactionService
 from pii_redaction_demo.services.pipeline import (
     EmailRedactionPipeline,
@@ -31,13 +35,22 @@ def build_image_pipeline(
     credential: TokenCredential | None = None,
 ) -> ImageRedactionPipeline:
     endpoint = _require_endpoint(settings)
-    if not settings.document_intelligence_endpoint:
-        raise ValueError("APP_DOCUMENT_INTELLIGENCE_ENDPOINT is not configured")
     credential = credential or DefaultAzureCredential()
-    return ImageRedactionPipeline(
-        ocr=AzureDocumentIntelligenceOcrProvider(
+    ocr: OcrProvider
+    if settings.ocr_provider == "content_understanding":
+        if not settings.content_understanding_endpoint:
+            raise ValueError("APP_CONTENT_UNDERSTANDING_ENDPOINT is not configured")
+        ocr = AzureContentUnderstandingOcrProvider(
+            settings.content_understanding_endpoint, credential
+        )
+    else:
+        if not settings.document_intelligence_endpoint:
+            raise ValueError("APP_DOCUMENT_INTELLIGENCE_ENDPOINT is not configured")
+        ocr = AzureDocumentIntelligenceOcrProvider(
             settings.document_intelligence_endpoint, credential
-        ),
+        )
+    return ImageRedactionPipeline(
+        ocr=ocr,
         redaction=_build_redaction_service(settings, endpoint, credential),
         image_redactor=PillowImageRedactor(),
     )

@@ -10,7 +10,7 @@ variable "resource_group_name" {
 }
 
 variable "location" {
-  description = "Azure region for all resources."
+  description = "Azure region for all resources; must support Content Understanding Read."
   type        = string
   default     = "eastus"
 }
@@ -22,7 +22,7 @@ variable "name_prefix" {
 }
 
 variable "ai_services_sku_name" {
-  description = "SKU for the multi-service Azure AI Services account."
+  description = "SKU for the existing Foundry account serving Language PII."
   type        = string
   default     = "S0"
 }
@@ -34,7 +34,7 @@ variable "project_name" {
 }
 
 variable "document_intelligence_sku_name" {
-  description = "SKU for the Document Intelligence Read account (S0 or F0)."
+  description = "SKU for the retained alternative Document Intelligence Read account (S0 or F0)."
   type        = string
   default     = "S0"
 
@@ -53,7 +53,7 @@ variable "local_auth_enabled" {
 }
 
 variable "data_plane_principal_ids" {
-  description = "Entra ID object IDs granted 'Cognitive Services User' on both accounts. Defaults to the deploying principal."
+  description = "Entra ID object IDs granted 'Cognitive Services User' on all three accounts. Defaults to the deploying principal."
   type        = list(string)
   default     = []
 }

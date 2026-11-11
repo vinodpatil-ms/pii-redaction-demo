@@ -44,7 +44,7 @@ module "resource_group" {
   tags     = var.tags
 }
 
-# Language PII account; project_management_enabled makes it a Foundry resource.
+# Existing Language PII account and Foundry project are retained.
 module "ai_services" {
   source = "../../modules/cognitive_account"
 
@@ -60,6 +60,23 @@ module "ai_services" {
   tags                       = merge(var.tags, { service = "ai-services" })
 }
 
+# Dedicated OCR boundary; prebuilt-read needs no LLM or embedding deployments.
+module "content_understanding" {
+  source = "../../modules/cognitive_account"
+
+  name                       = "cog-${var.name_prefix}-content-${random_string.suffix.result}"
+  location                   = module.resource_group.location
+  resource_group_name        = module.resource_group.name
+  kind                       = "AIServices"
+  sku_name                   = "S0"
+  custom_subdomain_name      = "cog-${var.name_prefix}-content-${random_string.suffix.result}"
+  local_auth_enabled         = var.local_auth_enabled
+  project_management_enabled = true
+  role_assignments           = local.data_plane_role_assignments
+  tags                       = merge(var.tags, { service = "content-understanding" })
+}
+
+# Retained for the selectable Document Intelligence OCR alternative.
 module "document_intelligence" {
   source = "../../modules/cognitive_account"
 
@@ -81,7 +98,7 @@ module "document_intelligence" {
 }
 
 # Development boundary for playgrounds, evaluations, and traces. Data-plane calls
-# use the Language and Document Intelligence account endpoints, not the project.
+# use account endpoints for Content Understanding/Language (or optional DI), not the project.
 resource "azurerm_cognitive_account_project" "default" {
   name                 = var.project_name
   cognitive_account_id = module.ai_services.id
